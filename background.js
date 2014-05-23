@@ -1,7 +1,7 @@
 /** Set defaults **/
 var status_codes = [324, 408, 502, 503, 504, 522, 524, 598, 599],
-	socket_errors = ["net::ERR_ABORTED"],
-	ignore_types = ["stylesheet", "script", "image", "xmlhttprequest"],
+	//socket_errors = ["net::ERR_ABORTED"],
+	//ignore_types = ["stylesheet", "script", "image", "xmlhttprequest"],
 	enabled = true,
 	wait_timer = 3000, // ms (3 seconds before page reloads)
 	tab_list = {};
@@ -16,14 +16,14 @@ function incrementTabCounter(tabId) {
 }
 
 function reloadTab(tabId) {
-	if (tabId > -1) {
+	//if (tabId > -1) {
 		chrome.browserAction.setBadgeText({text: incrementTabCounter(tabId).toString()});
 		chrome.tabs.reload(tabId);
-	}
+	//}
 }
 
 function in_array(needle, haystack) {
-	if (haystack.indexOf(needle)===-1) {
+	if (haystack.indexOf(needle) ===-1) {
 		return false;
 	}
 	return true;
@@ -33,9 +33,9 @@ function in_array(needle, haystack) {
 with a valid HTTP status code. **/
 chrome.webRequest.onHeadersReceived.addListener(
 	function(details) {
-		if(enabled) {
+		if(enabled && details.type === "main_frame") {
 			var http_status_code = parseInt(details.statusLine.split(" ")[1]);
-			if ((status_codes.indexOf(http_status_code) > -1) && (ignore_types.indexOf(details.type)===-1)) {
+			if (status_codes.indexOf(http_status_code) !== -1) {
 				console.log("Reloader: Tab ID #" + details.tabId + " (" + details.url + "): " + details.statusLine);
 				setTimeout(function() {reloadTab(details.tabId);}, wait_timer);
 			}
@@ -50,9 +50,9 @@ chrome.webRequest.onHeadersReceived.addListener(
 a low-level socket error. In these cases, an error is fired.)**/
 chrome.webRequest.onErrorOccurred.addListener(
 	function(details) {
-		if(enabled) {
+		if(enabled && details.type === "main_frame") {
 			console.log("Reloader: Tab ID #" + details.tabId + " (" + details.url + ") failed to load: " + details.error);
-			if ((socket_errors.indexOf(details.error)===-1) && (ignore_types.indexOf(details.type)===-1)) {
+			if (details.error === "net::ERR_ABORTED") {
 				setTimeout(function() {reloadTab(details.tabId);}, wait_timer);
 			}
 		}
